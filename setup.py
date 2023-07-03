@@ -36,20 +36,20 @@ CLASSIFIERS = [
 ]
 INSTALL_REQUIRES = [
     "wheel",
-    "colorama==0.4.1",
-    "termcolor==1.1.0",
-    "capstone==4.0.1",
-    "sortedcontainers==2.1.0",
-    "verboselogs==1.7",
+    "colorama",
+    "termcolor",
+    "capstone",
+    "sortedcontainers",
+    "verboselogs",
     "dnslib>=0.9.17",
-    "hexdump==3.3",
-    "dpkt==1.9.2",
-    "coloredlogs==10.0",
-    "configargparse==0.15.1",
-    "pypacker==4.9",
+    "hexdump",
+    "dpkt",
+    "coloredlogs",
+    "configargparse",
+    "pypacker",
     "lief>=0.9.0",
-    "zebracorn==0.0.1",
-    "lark-parser==0.7.8",
+    "zebracorn",
+    "lark-parser",
 ]
 EXTRAS_REQUIRE = {
     "docs": [
