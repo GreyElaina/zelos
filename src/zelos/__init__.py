@@ -20,7 +20,7 @@ __title__ = "zelos"
 __description__ = "A comprehensive binary emulation platform."
 __url__ = "https://github.com/zeropointdynamics/zelos"
 __uri__ = __url__
-__doc__ = __description__ + " <" + __uri__ + ">"
+__doc__ = f"{__description__} <{__uri__}>"
 
 __author__ = "Zeropoint Dynamics"
 __email__ = "zelos@zeropointdynamics.com"

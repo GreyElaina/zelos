@@ -126,7 +126,7 @@ expected_yaml = [
 def remove_matching_lines(haystack, needles):
     result = StringIO()
     for line in haystack.split("\n"):
-        if not any(needle in line for needle in needles):
+        if all(needle not in line for needle in needles):
             result.write(f"{line}\n")
     return result.getvalue()
 

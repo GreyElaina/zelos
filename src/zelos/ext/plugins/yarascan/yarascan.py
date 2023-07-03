@@ -191,7 +191,7 @@ class YaraMatch:
             else:
                 self._yara_strings = [
                     YaraString(self.region_address + s[0], s)
-                    for i, s in enumerate(self._strings)
+                    for s in self._strings
                 ]
 
         return self._yara_strings
@@ -219,7 +219,7 @@ class YaraMatch:
             f.write(f"\txrefs: {self.xrefs}\n")
         if not brief:
             f.write(f"\tstrings:\n")
-            for i, s in enumerate(self.strings):
+            for s in self.strings:
                 f.write(f"\t\taddress: 0x{self._mr.start + s.offset:x}\n")
                 f.write(f"\t\t\toffset: 0x{s.offset:x}\n")
                 f.write(f'\t\t\tvalue: "{s.value[:1000]}"\n')
@@ -239,16 +239,15 @@ class YaraMatch:
         """
         if brief:
             return f"Matched rule: {self.namespace}.{self.rule}"
-        else:
-            for i, s in enumerate(self.strings):
-                xref_info = ""
-                if self._count_xrefs:
-                    xref_info = f" xrefs: {self._xref_cnts[i]}"
-                return (
-                    f"Matched {self.namespace}.{self.rule} "
-                    f"0x{s.address:08x} +0x{s.offset:x}{xref_info} "
-                    f"{s.value[:100]}"
-                )
+        for i, s in enumerate(self.strings):
+            xref_info = ""
+            if self._count_xrefs:
+                xref_info = f" xrefs: {self._xref_cnts[i]}"
+            return (
+                f"Matched {self.namespace}.{self.rule} "
+                f"0x{s.address:08x} +0x{s.offset:x}{xref_info} "
+                f"{s.value[:100]}"
+            )
 
     def memdump(self, directory: str) -> str:
         """
@@ -334,9 +333,9 @@ class YaraScan(IPlugin):
 
             self._yara = yara
         except ModuleNotFoundError:
-            self._log(f"optional dependency `yara-python` not installed.")
-            self._log(f"yara rules will be IGNORED.")
-            self._log(f"try `pip install yara-python`.")
+            self._log("optional dependency `yara-python` not installed.")
+            self._log("yara rules will be IGNORED.")
+            self._log("try `pip install yara-python`.")
             return False
         return True
 
@@ -345,11 +344,9 @@ class YaraScan(IPlugin):
 
     def _match(self, data: bytes):
         if self._cmdline_rules is not None:
-            for m in self._cmdline_rules.match(data=data):
-                yield m
+            yield from self._cmdline_rules.match(data=data)
         if self._rules is not None:
-            for m in self._rules.match(data=data):
-                yield m
+            yield from self._rules.match(data=data)
 
     def matches(
         self,
@@ -414,15 +411,12 @@ class YaraScan(IPlugin):
         for i, rule in enumerate(rules):
             if rule[0] not in ("{", "/"):
                 rule = f'"{rule}" wide ascii nocase'
-            sources[f"cmdline"] = (
-                f"rule rule{i}"
-                + " { strings: $a = "
-                + rule
-                + " condition: $a }"
+            sources["cmdline"] = (
+                f"rule rule{i}" + " { strings: $a = " + rule + " condition: $a }"
             )
         filepaths = {}
         if glob_string is not None:
-            files = files + glob.glob(glob_string, recursive=True)
+            files += glob.glob(glob_string, recursive=True)
         stem_cnt = defaultdict(int)
         for filepath in files:
             stem = Path(filepath).stem

@@ -65,8 +65,7 @@ class Loader:
         except Exception:
             pass
         print(
-            "entrypoint_override (%s) was neither an export nor an address."
-            % entrypoint_override
+            f"entrypoint_override ({entrypoint_override}) was neither an export nor an address."
         )
         return pe.EntryPoint
 

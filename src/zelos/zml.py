@@ -21,8 +21,7 @@ class ConditionList:
         self._count = 0
 
     def __str__(self):
-        s = str(self._conditions)
-        return s
+        return str(self._conditions)
 
     def is_satisfied(self, zelos):
         thread = self._conditions.get("thread", None)
@@ -32,10 +31,7 @@ class ConditionList:
         # Count must be the last condition
         self._count += 1
         n = self._conditions.get("n", None)
-        if n is not None and n != self._count:
-            return False
-        else:
-            return True
+        return n is None or n == self._count
 
 
 class SyscallConditionList(ConditionList):
@@ -203,7 +199,7 @@ class ZmlParser:
         zml_object.act_when_satisfied(self.zelos, action)
 
     def parse_zml_string(self, zml_string: str) -> Optional[HookInfo]:
-        if zml_string == "":
+        if not zml_string:
             return EmptyConditionList()
 
         tree = self._zml_parser.parse(zml_string)

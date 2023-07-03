@@ -53,33 +53,32 @@ class TestPathTranslator(unittest.TestCase):
 
         file = tempfile.NamedTemporaryFile()
         folder = tempfile.TemporaryDirectory()
-        f1 = open(
+        with open(
             path_translator.emulated_path_module.join(
                 folder.name, path_leaf(file.name)
             ),
             "wb",
-        )
-        f2 = open(
-            path_translator.emulated_path_module.join(
-                folder.name, "testfile2"
-            ),
-            "wb",
-        )
-        path_translator.add_file(file.name, "/testfolder/testfile2")
-        path_translator.mount_folder(folder.name, "/testfolder")
+        ) as f1:
+            f2 = open(
+                path_translator.emulated_path_module.join(
+                    folder.name, "testfile2"
+                ),
+                "wb",
+            )
+            path_translator.add_file(file.name, "/testfolder/testfile2")
+            path_translator.mount_folder(folder.name, "/testfolder")
 
-        file_name = path_translator.emulated_path_to_host_path("/testfolder")
-        self.assertEqual(file_name, folder.name)
+            file_name = path_translator.emulated_path_to_host_path("/testfolder")
+            self.assertEqual(file_name, folder.name)
 
-        file_name = path_translator.emulated_path_to_host_path(
-            "/testfolder/testfile2"
-        )
-        self.assertEqual(file_name, file.name)
+            file_name = path_translator.emulated_path_to_host_path(
+                "/testfolder/testfile2"
+            )
+            self.assertEqual(file_name, file.name)
 
-        file_name = path_translator.emulated_path_to_host_path("/testfile2")
-        self.assertIsNone(file_name)
+            file_name = path_translator.emulated_path_to_host_path("/testfile2")
+            self.assertIsNone(file_name)
 
-        f1.close()
         f2.close()
         folder.cleanup()
 

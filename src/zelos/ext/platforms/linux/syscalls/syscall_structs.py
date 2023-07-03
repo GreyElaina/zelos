@@ -48,10 +48,7 @@ class MMSGHDR(ctypes.Structure):
 
 
 def get_stat_struct(arch):
-    if arch == "arm":
-        return ARMSTAT()
-    else:
-        return STAT()
+    return ARMSTAT() if arch == "arm" else STAT()
 
 
 class ARMSTAT(ctypes.Structure):

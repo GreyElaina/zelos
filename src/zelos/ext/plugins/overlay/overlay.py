@@ -57,14 +57,7 @@ class Overlay(IPlugin):
             and not z.config.inst
         ):
             self.logger.error(
-                (
-                    f"You will not get instruction comments or function "
-                    f"information if you are not running in verbose mode. "
-                    f"Include the flag --inst if you want instruction "
-                    f"comments in your overlay. "
-                    f"For an additional speedup, consider also including "
-                    f'the fasttrace flag ("--inst --fasttrace").'
-                )
+                'You will not get instruction comments or function information if you are not running in verbose mode. Include the flag --inst if you want instruction comments in your overlay. For an additional speedup, consider also including the fasttrace flag ("--inst --fasttrace").'
             )
         if self.export_mem or self.export_trace:
             original_file_name = basename(z.target_binary_path)
@@ -114,19 +107,19 @@ class Overlay(IPlugin):
     def _dump_section(self, name, addr, perm, data, out_map):
         if "base_address" not in out_map:
             out_map["base_address"] = addr
-        section = {}
-        section["name"] = name
-        section["address"] = addr
-        section["permissions"] = perm
-        section["data"] = base64.b64encode(data).decode()
-        return section
+        return {
+            "name": name,
+            "address": addr,
+            "permissions": perm,
+            "data": base64.b64encode(data).decode(),
+        }
 
     def _dump_heap(self, data):
         """ Truncate unused portion of heap data. """
-        for i in range(len(data) - 1, 0, -1):
-            if data[i] != 0:
-                return data[: i + 1]
-        return data
+        return next(
+            (data[: i + 1] for i in range(len(data) - 1, 0, -1) if data[i] != 0),
+            data,
+        )
 
     def export(self, outfile=None, trace=False, mem=False):
         """
@@ -143,12 +136,12 @@ class Overlay(IPlugin):
 
 
         """
-        out_map = {}
-        out_map["entrypoint"] = self.zelos.main_binary.EntryPoint
-        out_map["sections"] = []
-        out_map["functions"] = []
-        out_map["comments"] = []
-
+        out_map = {
+            "entrypoint": self.zelos.main_binary.EntryPoint,
+            "sections": [],
+            "functions": [],
+            "comments": [],
+        }
         if mem:
             regions = self.zelos.memory.get_regions()
             for region in sorted(regions):
@@ -210,7 +203,7 @@ class Overlay(IPlugin):
                     f"Perm: 0x{perm:x} \t{kind}\t\t{name}"
                 )
 
-                if dumped is True and self._bad_section(data):
+                if dumped and self._bad_section(data):
                     dumped = False
 
                 if dumped:
@@ -223,10 +216,7 @@ class Overlay(IPlugin):
             out_map["comments"] = self._comments
 
             for addr in self.zelos.plugins.trace.functions_called.keys():
-                function = {}
-                function["address"] = addr
-                function["name"] = f"traced_{addr:x}"
-                function["is_import"] = False
+                function = {"address": addr, "name": f"traced_{addr:x}", "is_import": False}
                 out_map["functions"].append(function)
 
         r = json.dumps(out_map)

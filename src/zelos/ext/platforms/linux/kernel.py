@@ -38,9 +38,7 @@ def construct_kernel(arch, z):
         "mips": MIPSKernel,
     }.get(arch, None)
 
-    if kernel_class is None:
-        return None
-    return kernel_class(z)
+    return None if kernel_class is None else kernel_class(z)
 
 
 class LinuxKernel(IKernel):
@@ -320,8 +318,7 @@ class ARMKernel(LinuxKernel):
                 f"Why was there an exception here if the last instruction "
                 f"wasn't a syscall {self.z.current_thread.getIP():x}"
             )
-        val = self.emu.get_reg("r7")
-        return val
+        return self.emu.get_reg("r7")
 
     def set_return_value(self, value):
         self.emu.set_reg("r0", value)

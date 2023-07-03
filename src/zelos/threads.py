@@ -48,7 +48,7 @@ class InvalidTidException(ZelosException):
         if tid is not None:
             super().__init__(f"{tid:x} is not a valid tid")
         else:
-            super().__init__(f"'None' is not a valid tid")
+            super().__init__("'None' is not a valid tid")
 
 
 class Thread(object):
@@ -282,10 +282,8 @@ class Thread(object):
             except Exception:
                 break
 
-            # Annotate each line with which function wrote that address.
-            owner = self.call_stack.get_stack_addr_owner(address)
-            if owner:
-                stack_str += "  (" + owner + ")"
+            if owner := self.call_stack.get_stack_addr_owner(address):
+                stack_str += f"  ({owner})"
 
             result += stack_str + "\n"
             address += ptr_size
@@ -331,11 +329,7 @@ class Threads:
             return s
 
         for t in sorted(threads, key=lambda x: x.name):
-            if self.is_current_thread(t):
-                s += f"  *{t}\n"
-            else:
-                s += f"   {t}\n"
-
+            s += f"  *{t}\n" if self.is_current_thread(t) else f"   {t}\n"
         return s
 
     @property
@@ -639,7 +633,7 @@ class Threads:
         """Change the priority of a thread"""
         t = self.get_thread_by_name(thread_name)
         if t is None:
-            print("Unable to find thread %s" % thread_name)
+            print(f"Unable to find thread {thread_name}")
             return
         t.priority = new_priority
 
@@ -653,10 +647,7 @@ class Threads:
         return threads[0] if len(threads) > 0 else None
 
     def get_thread(self, tid):
-        for t in self.get_all_threads():
-            if t.id == tid:
-                return t
-        return None
+        return next((t for t in self.get_all_threads() if t.id == tid), None)
 
     def get_threads(self, names):
         """
@@ -665,11 +656,7 @@ class Threads:
         """
         if names is None:
             return self.get_all_threads()
-        threads = []
-        for t in self.get_all_threads():
-            if t.name in names:
-                threads.append(t)
-        return threads
+        return [t for t in self.get_all_threads() if t.name in names]
 
     def get_child_threads(self, tid: int) -> List[Thread]:
         """Returns all threads with the given parent name"""

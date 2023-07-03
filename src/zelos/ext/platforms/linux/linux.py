@@ -58,13 +58,13 @@ class Linux(OSPlugin):
         if binary.format != lief.EXE_FORMATS.ELF:
             return None
 
-        arch = {
-            lief.ELF.ARCH.i386: "x86",
-            lief.ELF.ARCH.x86_64: "x86_64",
-            lief.ELF.ARCH.ARM: "arm",
-            lief.ELF.ARCH.MIPS: "mips",
-        }[binary.header.machine_type]
         if not self.initial_parse:
+            arch = {
+                lief.ELF.ARCH.i386: "x86",
+                lief.ELF.ARCH.x86_64: "x86_64",
+                lief.ELF.ARCH.ARM: "arm",
+                lief.ELF.ARCH.MIPS: "mips",
+            }[binary.header.machine_type]
             self._first_parse_setup(arch)
         if self.z.config.virtual_filename is None:
             self.z.config.virtual_filename = os.path.basename(path)
@@ -78,10 +78,7 @@ class Linux(OSPlugin):
 
         # TODO: synchronize this path with the main zelos rootfs
         parsed_file = LiefELF(self.z.files, path, binary)
-        if parsed_file is None:
-            return None
-
-        return parsed_file
+        return None if parsed_file is None else parsed_file
 
     def _get_emulated_path(self, config, path: str) -> str:
         if config.virtual_path is not None:

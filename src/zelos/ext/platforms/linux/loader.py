@@ -95,8 +95,7 @@ class LinuxMode:
 
     def _attempt_to_handle_syscall(self):
         syscall_action = self.z.kernel.handle_syscall(self.z.current_process)
-        was_handled = syscall_action is not None
-        return was_handled
+        return syscall_action is not None
 
     def create_tls(self, thread):
         if thread.local_data_address is not None:

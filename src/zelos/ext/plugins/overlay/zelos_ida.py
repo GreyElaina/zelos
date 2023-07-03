@@ -36,10 +36,8 @@ class ApplyZelosOverlay(idaapi.action_handler_t):  # pragma: no cover
         )
         if filepath is None:
             return
-        f = open(filepath, "r")
-        zelos_data = f.read()
-        f.close()
-
+        with open(filepath, "r") as f:
+            zelos_data = f.read()
         zelos_data = zelos_data[len("DISAS\n") :]
         zelos_dump = json.loads(zelos_data)
 
@@ -60,7 +58,7 @@ class ApplyZelosOverlay(idaapi.action_handler_t):  # pragma: no cover
             idc.get_func_attr(ea, idc.FUNCATTR_START)
             name = idc.get_func_name(ea)
             if len(name) > 0 and name.startswith("zmu_") is False:
-                idc.set_name(ea, "zmu_" + name)
+                idc.set_name(ea, f"zmu_{name}")
 
         return 1
 

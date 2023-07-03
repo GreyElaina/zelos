@@ -68,14 +68,12 @@ class OverlayTest(unittest.TestCase):
         finally:
             os.chdir(original_dir)
 
-        output = open(path.join(directory.name, "static_elf_helloworld.zmu"))
+        with open(path.join(directory.name, "static_elf_helloworld.zmu")) as output:
+            data = output.read()[len("DISAS\n") :]
+            memdump = json.loads(data)
+            self.assertGreaterEqual(len(memdump["comments"]), 8277)
 
-        data = output.read()[len("DISAS\n") :]
-        memdump = json.loads(data)
-        self.assertGreaterEqual(len(memdump["comments"]), 8277)
+            self.assertEqual(len(memdump["functions"]), 244)
 
-        self.assertEqual(len(memdump["functions"]), 244)
-
-        self.assertEqual(memdump["comments"][0]["address"], 134515568)
-        self.assertEqual(memdump["comments"][0]["text"], "ebp = 0x0")
-        output.close()
+            self.assertEqual(memdump["comments"][0]["address"], 134515568)
+            self.assertEqual(memdump["comments"][0]["text"], "ebp = 0x0")

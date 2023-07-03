@@ -144,13 +144,13 @@ class Triggers:
         tags = [] if tags is None else tags
         tags.append(grouping)
 
-        if name not in self.rules:
-            if rule_type == RuleType.NORMAL:
-                self.rules[name] = Trigger(name, details, tags)
-            elif rule_type == RuleType.TABLE:
-                self.rules[name] = TableTrigger(name, details, type_info, tags)
-        else:
+        if name in self.rules:
             self.rules[name].add_occurrence(details)
+
+        elif rule_type == RuleType.NORMAL:
+            self.rules[name] = Trigger(name, details, tags)
+        elif rule_type == RuleType.TABLE:
+            self.rules[name] = TableTrigger(name, details, type_info, tags)
 
         # Update the file if the report directory is specified
         # if len(self.report_filepath) > 0:
@@ -191,7 +191,7 @@ class Triggers:
         max_printed_domains = 10
         self.trigger(
             "Contacts domain",
-            "Connects to %s using %s" % (domain_name, method_name),
+            f"Connects to {domain_name} using {method_name}",
             grouping="Network Activity",
         )
         if (
@@ -200,9 +200,7 @@ class Triggers:
         ):
             self._custom_print(f'DNS QUERY: "{domain_name}"')
         if len(self.unique_domains) == max_printed_domains:
-            self._custom_print(
-                f"DNS QUERY: Suppressing additional query output"
-            )
+            self._custom_print("DNS QUERY: Suppressing additional query output")
         self.unique_domains.add(domain_name)
         if len(self.unique_domains) % 100 == 0:
             self._custom_print(
@@ -213,14 +211,14 @@ class Triggers:
     def tr_contacts_many_domains(self, domains):
         self.update_trigger(
             "Contacts many domains",
-            "Connects to %s..." % ",".join(domains),
+            f'Connects to {",".join(domains)}...',
             grouping="Network Activity",
         )
 
     def tr_contacts_malicious_domain(self, domain_name, method_name):
         self.trigger(
             "Contacts known malicious domain",
-            "Connects to %s using %s" % (domain_name, method_name),
+            f"Connects to {domain_name} using {method_name}",
             grouping="Network Activity",
             tags=["malicious"],
         )
@@ -233,7 +231,7 @@ class Triggers:
     def tr_create_process(self, name_of_remote_process, address):
         self.trigger(
             "Creates new process",
-            "Executes %s" % name_of_remote_process,
+            f"Executes {name_of_remote_process}",
             grouping="Process Manipulation",
             tags=["evasive"],
         )
@@ -265,7 +263,7 @@ class Triggers:
         if dll_region_name is not None:
             self.trigger(
                 "Writes into separate process",
-                "Inserted into dll region: %s" % dll_region_name,
+                f"Inserted into dll region: {dll_region_name}",
                 grouping="Process Manipulation",
             )
         else:
@@ -279,14 +277,14 @@ class Triggers:
     def tr_registry_key_open(self, key_name, sub_key_name, perm):
         self.trigger(
             "Registry Key opened",
-            "Key: %s" % sub_key_name,
+            f"Key: {sub_key_name}",
             grouping="Registry Key Manipulation",
         )
 
     def tr_registry_key_read(self, key_name, perm):
         self.trigger(
             "Registry Key read",
-            "Key: %s" % key_name,
+            f"Key: {key_name}",
             grouping="Registry Key Manipulation",
         )
 
@@ -326,15 +324,11 @@ class Triggers:
     # File System
     def tr_file_check(self, filename):
         self.trigger(
-            "File details checked",
-            "Name: %s" % filename,
-            grouping="File System",
+            "File details checked", f"Name: {filename}", grouping="File System"
         )
 
     def tr_file_open(self, filename):
-        self.trigger(
-            "Files opened", "Name: %s" % filename, grouping="File System"
-        )
+        self.trigger("Files opened", f"Name: {filename}", grouping="File System")
 
     def tr_file_read(self):
         pass
@@ -357,15 +351,15 @@ class Triggers:
         self._custom_print(f"{self.load_library_message} {module_name}")
 
     def tr_mutex_open(self, mutex_name):
-        self.trigger("Opens Mutex", 'Name: "%s"' % mutex_name)
+        self.trigger("Opens Mutex", f'Name: "{mutex_name}"')
         self._custom_print(f"Open Mutex: '{mutex_name}'")
 
     def tr_mutex_create(self, mutex_name):
-        self.trigger("Creates Mutex", 'Name: "%s"' % mutex_name)
+        self.trigger("Creates Mutex", f'Name: "{mutex_name}"')
         self._custom_print(f"Create Mutex: '{mutex_name}'")
 
     def tr_call_crypto_func(self, func_name):
-        self.trigger("Calls Crypto function", "%s" % func_name)
+        self.trigger("Calls Crypto function", f"{func_name}")
 
     def tr_sleep(self, time_slept_in_ms, address):
         if time_slept_in_ms > 2 * 60 * 1000:

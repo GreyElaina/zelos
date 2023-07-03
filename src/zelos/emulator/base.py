@@ -119,14 +119,11 @@ class MemoryRegion:
         if self.prot & ProtType.EXEC != 0:
             perms[2] = "x"
         perms = "".join(perms)
-        access = "private"
-        if self.shared:
-            access = " shared"
+        access = " shared" if self.shared else "private"
         info = [i for i in [self.module_name, self.name, self.kind] if i]
         info = ", ".join(info)
         s = [i for i in [area, size, perms, access, info] if i]
-        s = " ".join(s)
-        return s
+        return " ".join(s)
 
     def __eq__(self, other):
         return (
@@ -161,7 +158,7 @@ class PageTable:
         self.reset()
 
     def reset(self):
-        self._pages = dict()
+        self._pages = {}
 
     def add(self, section) -> None:
         """
@@ -253,7 +250,7 @@ class PageTable:
             size: The size of the data to fetch in bytes.
 
         """
-        if len(data) == 0:
+        if not data:
             return
         page_addr = address & PageTable.PAGE_MASK
 
@@ -312,7 +309,7 @@ class IEmuHelper:
         self._uc = zebracorn_engine
         self._logger = logging.getLogger(__name__)
         self._is_running = False
-        self._managed_ctype_buffers = dict()
+        self._managed_ctype_buffers = {}
         self._page_table = PageTable()
         self._regions = SortedDict()
         self._pack_fmt_little = [None] * 9
@@ -591,10 +588,14 @@ class IEmuHelper:
             addr += length
 
     def mem_region(self, address: int):
-        for region in self.mem_regions():
-            if address >= region.address and address <= region.end:
-                return region
-        return None
+        return next(
+            (
+                region
+                for region in self.mem_regions()
+                if address >= region.address and address <= region.end
+            ),
+            None,
+        )
 
     # Returns MemoryRegions sorted by start address
     def mem_regions(self):
@@ -634,15 +635,15 @@ class IEmuHelper:
             little_endian = self.state.endianness[0] == "l"
         fmt = None
         if little_endian:
-            if signed:
-                fmt = self._pack_fmt_signed_little[bytes]
-            else:
-                fmt = self._pack_fmt_little[bytes]
+            fmt = (
+                self._pack_fmt_signed_little[bytes]
+                if signed
+                else self._pack_fmt_little[bytes]
+            )
+        elif signed:
+            fmt = self._pack_fmt_signed_big[bytes]
         else:
-            if signed:
-                fmt = self._pack_fmt_signed_big[bytes]
-            else:
-                fmt = self._pack_fmt_big[bytes]
+            fmt = self._pack_fmt_big[bytes]
         return pack(fmt, x & self._pack_bitmask[bytes])
 
     def unpack(
@@ -662,15 +663,15 @@ class IEmuHelper:
             little_endian = self.state.endianness[0] == "l"
         fmt = None
         if little_endian:
-            if signed:
-                fmt = self._pack_fmt_signed_little[bytes]
-            else:
-                fmt = self._pack_fmt_little[bytes]
+            fmt = (
+                self._pack_fmt_signed_little[bytes]
+                if signed
+                else self._pack_fmt_little[bytes]
+            )
+        elif signed:
+            fmt = self._pack_fmt_signed_big[bytes]
         else:
-            if signed:
-                fmt = self._pack_fmt_signed_big[bytes]
-            else:
-                fmt = self._pack_fmt_big[bytes]
+            fmt = self._pack_fmt_big[bytes]
         return unpack(fmt, x)[0]
 
     def _mem_map_region(self, mr: MemoryRegion):
@@ -717,10 +718,8 @@ class IEmuHelper:
         if address > mr.end or chunk_end <= mr.address:
             raise OutOfMemoryException()
         self._mem_unmap_region(mr)
-        if address < mr.address:
-            address = mr.address
-        if chunk_end > mr.end + 1:
-            chunk_end = mr.end + 1
+        address = max(address, mr.address)
+        chunk_end = min(chunk_end, mr.end + 1)
         l_size = address - mr.address
         m_size = chunk_end - address
         r_size = mr.end + 1 - chunk_end
@@ -770,6 +769,5 @@ def create_emulator(arch, mode, state) -> IEmuHelper:
             )
     except UcError:
         raise ZelosLoadException(
-            f"Custom zebracorn does not support the arch/mode/bits"
-            + f" {arch}/{mode}/{state.bits}"
+            f"Custom zebracorn does not support the arch/mode/bits {arch}/{mode}/{state.bits}"
         )

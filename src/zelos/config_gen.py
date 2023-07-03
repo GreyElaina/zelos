@@ -53,8 +53,7 @@ def generate_config(
         if isinstance(v, bool):
             flags.append(f"--{k}")
         elif type(v) is list:
-            for item in v:
-                flags.append(f"--{k}={item}")
+            flags.extend(f"--{k}={item}" for item in v)
         else:
             flags.append(f"--{k}={v}")
 
@@ -287,9 +286,7 @@ def generate_parser():
 
 def generate_config_from_cmdline(cmdline_string):
     parser = generate_parser()
-    config = parser.parse_args(cmdline_string)
-
-    return config
+    return parser.parse_args(cmdline_string)
 
 
 class _ParseEnvVars(argparse._AppendAction):
@@ -310,5 +307,5 @@ class _ParseEnvVars(argparse._AppendAction):
                 )
 
         dest = getattr(namespace, self.dest, {})
-        d.update(dest)
+        d |= dest
         setattr(namespace, self.dest, d)

@@ -67,7 +67,7 @@ class Trace(IPlugin):
         self.MAX_INDENTS = 40
         self.threads_to_print = set()
 
-        self.fasttrace = True if z.config.fasttrace > 0 else False
+        self.fasttrace = z.config.fasttrace > 0
 
         self.last_instruction = None
         self.last_instruction_size = None
@@ -169,10 +169,14 @@ class Trace(IPlugin):
 
         if self.trace_file is None:
             s = (
-                colored(f"[{thread.name}]", "magenta")
-                + " "
-                + colored(f"[SYSCALL]", "red")
-                + " "
+                (
+                    (
+                        colored(f"[{thread.name}]", "magenta")
+                        + " "
+                        + colored("[SYSCALL]", "red")
+                    )
+                    + " "
+                )
                 + colored(f"{syscall_name}", "white", attrs=["bold"])
                 + f" ( {args} ) -> {retstr}"
             )
@@ -194,8 +198,8 @@ class Trace(IPlugin):
             address = self.zelos.regs.getIP()
         try:
             code = self.zelos.memory.read(address, size)
-            insns = [insn for insn in self.cs.disasm(code, address)]
-            if len(insns) == 0:
+            insns = list(self.cs.disasm(code, address))
+            if not insns:
                 return
             # For full trace, we'll just print the first instruction,
             # and then all the registers
@@ -278,9 +282,7 @@ class Trace(IPlugin):
             )[:8]
         except Exception:
             caller_module = "________"
-        native_s = ""
-        if isNative:
-            native_s = "[Native] "
+        native_s = "[Native] " if isNative else ""
         if indent_count == -1:
             indent_count = 0
         args = "".join([i if ord(i) < 128 else "." for i in args])
@@ -325,9 +327,7 @@ class Trace(IPlugin):
         if self._traceoff:
             return
         ins_string = self._get_insn_string(insn, cmt)
-        sep = ""
-        if insn.address == self.zelos.regs.getIP():
-            sep = "*"
+        sep = "*" if insn.address == self.zelos.regs.getIP() else ""
         addr = insn.address
         if addr in self.zelos.main_binary.exported_functions:
             fn_name = self.zelos.main_binary.exported_functions[addr]
@@ -347,8 +347,8 @@ class Trace(IPlugin):
         # add a config to print these if we need it.
         if t is None:
             t = self.zelos.thread
-            if t is None:
-                return False
+        if t is None:
+            return False
 
         if t.benign_code is True:
             return False
@@ -363,9 +363,9 @@ class Trace(IPlugin):
         result = f"{insn.mnemonic:8s} {insn.op_str}"
         if len(cmt) > 0:
             if self.trace_file is None:
-                cmt = colored("; " + cmt, "grey", attrs=["bold"])
+                cmt = colored(f"; {cmt}", "grey", attrs=["bold"])
             else:
-                cmt = "; " + cmt
+                cmt = f"; {cmt}"
             result = f"{result:60s} {cmt}"
         return result
 
@@ -430,10 +430,7 @@ class ArmCommentGenerator:
             return self._branch_comment(insn)
         if insn.mnemonic in ["push", "pop"]:
             return self._push_pop(insn)
-        if insn.mnemonic == "svc":
-            return self._svc_comment(insn)
-
-        return "."
+        return self._svc_comment(insn) if insn.mnemonic == "svc" else "."
 
     def _push_pop(self, insn):
         """
@@ -559,13 +556,13 @@ class x86CommentGenerator:
 
     def get_comment(self, insn):
         cmt = ""
-        if insn.mnemonic == "call" or insn.mnemonic == "jmp":
+        if insn.mnemonic in ["call", "jmp"]:
             cmt = self._call_string(insn)
         elif insn.mnemonic == "push":
             cmt = self._push_string(insn)
         elif len(insn.operands) == 1:
             cmt = self._single_operand(insn)
-        elif insn.mnemonic == "test" or insn.mnemonic == "cmp":
+        elif insn.mnemonic in ["test", "cmp"]:
             cmt = self._test_or_cmp_string(insn)
         elif len(insn.operands) == 2:
             cmt = self._double_operand(insn)
@@ -579,7 +576,7 @@ class x86CommentGenerator:
         self.functions_called[target] = True
         cmt = insn.mnemonic + "(0x{0:x})".format(target)
         if target in self._modules.reverse_module_functions:
-            cmt += " " + self._modules.reverse_module_functions[target]
+            cmt += f" {self._modules.reverse_module_functions[target]}"
         return cmt
 
     def _push_string(self, insn):

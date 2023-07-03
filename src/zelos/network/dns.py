@@ -22,10 +22,9 @@ import dnslib
 
 def parse_dns_request(raw_packet_data):
     try:
-        d = str(
+        return str(
             dnslib.DNSRecord.parse(raw_packet_data).get_q().get_qname()
         ).rstrip(".")
-        return str(d)
     except Exception as e:
         print("DNS_INVALID:", e)
     return None
@@ -36,12 +35,10 @@ def parse_dns_response(raw_packet_data):
         d = str(
             dnslib.DNSRecord.parse(raw_packet_data).get_a().get_rname()
         ).rstrip(".")
-        print("DNS_RESPONSE:", str(d))
-        return str(d)
+        print("DNS_RESPONSE:", d)
+        return d
     except Exception as e:
         print("DNS_INVALID:", e)
-    if len(str(d)) == 0:
-        return None
     return None
 
 

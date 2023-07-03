@@ -41,7 +41,7 @@ def brute():
     for i in range(9, -1, -1):
 
         # write our bruteforced guess to memory
-        z.memory.write_string(rdi, str(i) + "point")
+        z.memory.write_string(rdi, f"{str(i)}point")
 
         # Address of the test instr
         test_address = 0x00400BBB

@@ -80,7 +80,7 @@ class Engine:
 
         self.log_level = getattr(logging, config.log.upper(), None)
         if not isinstance(self.log_level, int):
-            raise ValueError("Invalid log level: %s" % config.log)
+            raise ValueError(f"Invalid log level: {config.log}")
 
         # To get different logs based on the level, read this:
         # https://stackoverflow.com/questions/14844970
@@ -420,7 +420,7 @@ class Engine:
         Disassemble code at the given address, for up to size bytes
         """
         code = self.memory.read(address, size)
-        return [insn for insn in self.cs.disasm(bytes(code), address)]
+        return list(self.cs.disasm(bytes(code), address))
 
     def step(self, count: int = 1) -> None:
         """Steps one assembly level instruction"""
@@ -463,7 +463,7 @@ class Engine:
         """
         Steps on assembly level instruction up to count instructions
         """
-        for i in range(count):
+        for _ in range(count):
             if not self._step_over():
                 return
 
@@ -475,7 +475,7 @@ class Engine:
             self.logger.notice(f"Unable to disassemble 0x{self.emu.getIP():x}")
             return False
         i = insts[0]
-        if insts[0].group(CS_GRP_CALL):
+        if i.group(CS_GRP_CALL):
             self.plugins.runner.run_to_addr(i.address + i.size)
         else:
             self.step()
@@ -580,11 +580,7 @@ class Engine:
         if self.scheduler._resolve_end_reasons() is False:
             return False
 
-        if self.processes.num_active_processes() == 0:
-            return False
-
-        # Keep running unless told otherwise.
-        return True
+        return self.processes.num_active_processes() != 0
 
     def close(self) -> None:
         """Handles the end of the run command"""
@@ -625,7 +621,4 @@ class Engine:
                 if insn.mnemonic != "ret":
                     address += insn.size
                     continue
-                if len(insn.operands) == 0:
-                    return 0  # no stack adjustment
-                # imm bytes popped by this function
-                return insn.operands[0].imm
+                return 0 if len(insn.operands) == 0 else insn.operands[0].imm

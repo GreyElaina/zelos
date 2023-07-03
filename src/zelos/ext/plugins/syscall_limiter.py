@@ -112,7 +112,7 @@ class SyscallLimiter(IPlugin):
             else:
                 self._last_syscall = sysname
                 if not kernel.should_print_syscalls:
-                    self.logger.info(f"Syscall printing reenabled")
+                    self.logger.info("Syscall printing reenabled")
                     kernel.should_print_syscalls = True
                 self._last_syscall_count = 1
 

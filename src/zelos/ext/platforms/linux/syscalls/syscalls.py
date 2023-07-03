@@ -291,7 +291,7 @@ def sys_mmap(k, p):
     try:
         return mmapx(k, p, "mmap", args, args.offset)
     except Exception as e:
-        k.print("mmap exception: " + str(e))
+        k.print(f"mmap exception: {str(e)}")
         return -1
 
 
@@ -309,7 +309,7 @@ def sys_mmap2(k, p):
     try:
         return mmapx(k, p, "mmap2", args, args.pgoffset * 0x1000)
     except Exception as e:
-        k.print("mmap2 exception: " + str(e))
+        k.print(f"mmap2 exception: {str(e)}")
         return -1
 
 
@@ -318,10 +318,7 @@ def mmapx(k, p, syscall_name, args, offset):
     MAP_FIXED = 0x10
     MAP_ANONYMOUS = 0x20
     memory_region_name = syscall_name
-    if args.flags & MAP_ANONYMOUS != 0:
-        handle = None
-    else:
-        handle = k.z.handles.get(args.fd)
+    handle = None if args.flags & MAP_ANONYMOUS != 0 else k.z.handles.get(args.fd)
     if handle is not None:
         memory_region_name = f"{syscall_name} -> {handle.Name}"
 
@@ -361,7 +358,6 @@ def mmapx(k, p, syscall_name, args, offset):
             # This should crash if we are unable to write to the desired
             # region
             p.memory.protect(addr, length, prot)
-            pass
         else:
             k.logger.notice(f"Attempting to map {addr} elsewhere")
             addr = p.memory.map_anywhere(
@@ -610,8 +606,7 @@ def sys_lseek(k, p):
         [("unsigned int", "fd"), ("off_t", "offset"), ("int", "whence")]
     )
     offset = p.emu.to_signed(args.offset)
-    file_position = xlseek(k, args.fd, offset, args.whence)
-    return file_position
+    return xlseek(k, args.fd, offset, args.whence)
 
 
 def xlseek(k, fd, offset, whence) -> int:
@@ -638,10 +633,9 @@ def sys_readlink(k, p):
             linked_path = "/proc/self/exe"
         else:
             linked_path = os.readlink(pathname)
-        s_len = p.memory.write_string(
+        return p.memory.write_string(
             args.buf, linked_path, terminal_null_byte=False
         )
-        return s_len
     except OSError:
         return -1
 
@@ -663,19 +657,16 @@ def sys_readlinkat(k, p):
             linked_path = "/proc/self/exe"
         else:
             linked_path = os.readlink(pathname)
-        s_len = p.memory.write_string(
+        return p.memory.write_string(
             args.buf, linked_path, terminal_null_byte=False
         )
-        return s_len
     except OSError:
         return -1
 
 
 def sys_getcwd(k, p):
     args = k.get_args([("char*", "buf"), ("size_t", "size")])
-    size = p.memory.write_string(args.buf, k.z.files.zelos_file_prefix)
-
-    return size
+    return p.memory.write_string(args.buf, k.z.files.zelos_file_prefix)
 
 
 def sys_faccessat(k, p):
@@ -689,21 +680,14 @@ def sys_faccessat(k, p):
     )
     pathname_s = p.memory.read_string(args.pathname)
     k.z.triggers.tr_file_check(pathname_s)
-    retval = -1
-    if k.z.files.find_library(pathname_s) is not None:
-        retval = 0
-    return retval
+    return 0 if k.z.files.find_library(pathname_s) is not None else -1
 
 
 def sys_access(k, p):
     args = k.get_args([("const char*", "pathname"), ("int", "mode")])
     pathname_s = p.memory.read_string(args.pathname)
     k.z.triggers.tr_file_check(pathname_s)
-    retval = -1
-    if k.z.files.find_library(pathname_s) is not None:
-        retval = 0
-
-    return retval
+    return 0 if k.z.files.find_library(pathname_s) is not None else -1
 
 
 class FCNTL(enum.IntEnum):
@@ -900,9 +884,8 @@ def sys_getdents(k, p):
         )
         if bytes_written == 0:
             break
-        else:
-            folder_contents.pop()
-            total_bytes_written += bytes_written
+        folder_contents.pop()
+        total_bytes_written += bytes_written
         prev_struct_start = struct_start
         struct_start = align(struct_start + bytes_written, alignment=0x4)
 
@@ -1121,8 +1104,7 @@ def sys_socketcall(k, p):
         19: socketcall.recvmmsg,
         20: socketcall.sendmmsg,
     }
-    retval = socket_dict[args.call](k, p, args.callargs)
-    return retval
+    return socket_dict[args.call](k, p, args.callargs)
 
 
 def sys_socket(k, p):
@@ -1284,15 +1266,10 @@ def _new_process(k, p, flags=0x0):
     child_pid = processes.new_process()
     child = processes.get_process(child_pid)
 
-    if flags & CLONE.VM > 0:
-        # Share memory
-        # TODO: Why isn't this working?
-        # child.memory = p.memory
-        child.memory.copy(p.memory)
-    else:
-        # duplicate the state of the target process.
-        child.memory.copy(p.memory)
-
+    # Share memory
+    # TODO: Why isn't this working?
+    # child.memory = p.memory
+    child.memory.copy(p.memory)
     parent_handles = k.z.handles._all_handles(p.pid)
     for num, h in parent_handles:
         k.z.handles.add_handle(h, handle_num=num, pid=child.pid)
@@ -1368,7 +1345,7 @@ def sys_wait4(k, p):
             return SysError.ECHILD
 
         active_children = [c for c in children if c.is_active]
-        if len(active_children) == 0:
+        if not active_children:
             return SysError.ECHILD
 
         def unpause_when():
@@ -1446,39 +1423,6 @@ def sys_execve(k, p):
 
     # FIXME: execve is not working. It executes the main binary's
     #  entrypoint again.
-    return
-
-    p.memory.clear()
-
-    p.cmdline_args = argv
-    p.environment_variables = envp
-
-    # You can also exec shell files
-    try:
-        with open(pathname, "rb") as f:
-            string = f.readline()
-            if string.startswith(b"#! /bin/sh"):
-                p.cmdline_args.insert(0, "/bin/sh")
-                pathname = "/bin/sh"
-    except FileNotFoundError:
-        pass
-    except PermissionError:
-        return SysError.EACCES
-
-    try:
-        file = k.z.parse_file(pathname)
-        k.z.files.add_file(pathname)
-    except ZelosLoadException:
-        return SysError.ENOENT
-
-    k.z.os_plugins.load(file, k.z.current_process)
-
-    # If this is successful, this thread essentially ends.
-    # TODO: we should have a list of things that can be execve'd, to
-    # make this configurable
-    p.scheduler.stop_and_exec(
-        "execve thread", p.threads.complete_current_thread
-    )
     return
 
 
@@ -1769,9 +1713,7 @@ def _read_fd_set(k, p, fd_set_ptr):
     fds = []
     for i in range(0, 1024 // 8, 32 // 8):
         val = p.memory.read_uint32(fd_set_ptr + i)
-        for bit in range(32):
-            if val & 2 ** bit != 0:
-                fds.append((i // 4) * 32 + bit)
+        fds.extend((i // 4) * 32 + bit for bit in range(32) if val & 2 ** bit != 0)
     return fds
 
 
@@ -1779,7 +1721,7 @@ def _write_fd_set(k, p, fd_set_ptr, fds):
     if fd_set_ptr == 0:
         return
     for i in range(0, 1024 // 8, 32 // 8):
-        val = int(0)
+        val = 0
         for bit in range(32):
             fd = (i // 4) * 32 + bit
             if fd in fds:
@@ -1838,9 +1780,7 @@ def sys__newselect(k, p):
     _write_fd_set(k, p, args.writefds, out_ready)
     _write_fd_set(k, p, args.exceptfds, ex_ready)
 
-    count = len(in_ready) + len(out_ready) + len(ex_ready)
-
-    return count
+    return len(in_ready) + len(out_ready) + len(ex_ready)
 
 
 def sys_futex(k, p):
@@ -1873,9 +1813,7 @@ def sys_futex(k, p):
         return 0
     if operation == 9:
         mem_val = p.memory.read_uint32(args.uaddr)
-        if mem_val == args.val:
-            return 0
-        return -1  # They need to be the same when this operation starts
+        return 0 if mem_val == args.val else -1
     return 0
 
 
@@ -2021,12 +1959,12 @@ def sys_poll(k, p):
     fds_poll = [(v.fd, v.events) for k, v in fds.items()]
 
     e = ", ".join([f"fd={x[0]:x} events={repr(POLL(x[1]))}" for x in fds_poll])
-    k.print("polled_fds: " + e)
+    k.print(f"polled_fds: {e}")
 
     revents = k.z.network.select.poll(fds_poll, timeout=0.1)
 
     e = ", ".join([f"fd={x[0]:x} events={repr(POLL(x[1]))}" for x in revents])
-    k.print("signaled_fds: " + e)
+    k.print(f"signaled_fds: {e}")
 
     # commit pollfd struct changes
     ready_fds = 0

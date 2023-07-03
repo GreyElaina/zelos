@@ -191,7 +191,7 @@ class TestZdbServer(unittest.TestCase):
             self.stop_server(proc, zdb)
 
         if zdb_exception is not None:
-            self.fail("test_server_api error: " + str(zdb_exception))
+            self.fail(f"test_server_api error: {str(zdb_exception)}")
 
 
 if __name__ == "__main__":

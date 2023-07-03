@@ -222,9 +222,7 @@ class BaseSocket:
             A byte array of the data received, or None.
         """
         # If sock exists, use it's simulated receiver
-        if self.sock is not None:
-            return self.sock.recv(bufsize, flags)
-        return b"0" * bufsize
+        return b"0" * bufsize if self.sock is None else self.sock.recv(bufsize, flags)
 
     def recvfrom(self, bufsize: int, flags: int = 0):
         """
@@ -296,9 +294,7 @@ class DnsSocketSimulator:
         try:
             domain = self._parse_dns_request(payload)
             if domain is None:
-                raise Exception(
-                    "[DnsSocketSimulator] Parse Failed: " + str(payload)
-                )
+                raise Exception(f"[DnsSocketSimulator] Parse Failed: {str(payload)}")
             else:
                 self.hostname = domain
             print(f"[DnsSocketSimulator] DNS Query {self.hostname}")
@@ -313,18 +309,16 @@ class DnsSocketSimulator:
 
         id = self.dns_id
         self.dns_id = None
-        reply = self._create_dns_response(
+        return self._create_dns_response(
             hostname=self.hostname, ip="127.0.0.1", id=id
         )
-        return reply
 
     def sendto(self, payload, host_and_port, flags=0):
         (self.host, self.port) = host_and_port
         return self.send(payload)
 
     def recvfrom(self, bufsize, flags=0):
-        result = (self.recv(bufsize), socket.AF_INET, self.host, self.port)
-        return result
+        return self.recv(bufsize), socket.AF_INET, self.host, self.port
 
     def is_readable(self):
         return True
@@ -396,8 +390,7 @@ class DnsSocketSimulator:
                     q=dnslib.DNSQuestion(hostname),
                     a=dnslib.RR(hostname, rdata=dnslib.A(ip)),
                 )
-            payload = bytes(d.pack())
-            return payload
+            return bytes(d.pack())
         except Exception as e:
             print("DNS_CREATE failed:", e)
         return None
@@ -420,13 +413,7 @@ class RawSocketSimulator:
         packet = ip.IP(payload)
         if packet[ip.IP, tcp.TCP] is not None:
             print(
-                "[RawSocketSimulator] RAW TCP %s:%s -> %s:%s"
-                % (
-                    packet[ip.IP].src_s,
-                    packet[tcp.TCP].sport,
-                    packet[ip.IP].dst_s,
-                    packet[tcp.TCP].dport,
-                )
+                f"[RawSocketSimulator] RAW TCP {packet[ip.IP].src_s}:{packet[tcp.TCP].sport} -> {packet[ip.IP].dst_s}:{packet[tcp.TCP].dport}"
             )
             (self.host, self.port) = (
                 packet[ip.IP].dst_s,
@@ -523,15 +510,10 @@ class BaseSelect:
             3 lists that indicate which handles ids are ready.
         """
 
-        # If the handle refers to a simulated socket (e.g. DNS or
-        # RAW socket simulator), check if there is data to read.
-        # Otherwise, nothing else is readable, and everything is
-        # writable.
-        readable_socks = []
         in_socks = self._handles_to_sockets(in_handles)
-        for sock in in_socks:
-            if sock is not None and sock.is_readable():
-                readable_socks.append(sock)
+        readable_socks = [
+            sock for sock in in_socks if sock is not None and sock.is_readable()
+        ]
         in_handles_ready = self._sockets_to_handles(in_handles, readable_socks)
 
         return (in_handles_ready, out_handles, [])

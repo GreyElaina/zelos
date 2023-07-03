@@ -45,10 +45,8 @@ class ZelosTest(unittest.TestCase):
         # All threads should exit successfully
         self.assertTrue(
             all(
-                [
-                    t.state == ThreadState.SUCCESS
-                    for t in z.internal_engine.processes.get_all_threads()
-                ]
+                t.state == ThreadState.SUCCESS
+                for t in z.internal_engine.processes.get_all_threads()
             ),
             msg=z.internal_engine.processes.__str__(),
         )

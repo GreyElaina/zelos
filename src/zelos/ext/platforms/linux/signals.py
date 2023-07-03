@@ -83,10 +83,14 @@ class Signals:
             self.handle_signal(sig)
 
     def next_unblocked_signal(self):
-        for i, sig in enumerate(self.signal_queue):
-            if not is_signal_blocked(sig, self.signal_mask):
-                return self.signal_queue.pop(i)
-        return None
+        return next(
+            (
+                self.signal_queue.pop(i)
+                for i, sig in enumerate(self.signal_queue)
+                if not is_signal_blocked(sig, self.signal_mask)
+            ),
+            None,
+        )
 
     def handle_signal(self, signum):
 

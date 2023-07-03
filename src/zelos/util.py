@@ -151,8 +151,7 @@ def in_mem_decrypt(filedata):
         b"ZENC"
     ), "Attempted to decrypt an unencrypted input file"
     filedata = filedata[len("ZENC") :]
-    decrypted_data = [byte ^ ENCRYPTION_KEY for byte in filedata]
-    return decrypted_data
+    return [byte ^ ENCRYPTION_KEY for byte in filedata]
 
 
 def found_domain(z, domain):

@@ -155,7 +155,7 @@ class IKernel(object):
         if not self.should_print_syscalls:
             return
         if len(string) > max_len:
-            string = str(string[:max_len]) + "..."
+            string = f"{str(string[:max_len])}..."
 
         print(string)
 
@@ -167,9 +167,8 @@ class IKernel(object):
             s = (
                 colored(f"[{self.z.current_thread.name}]", "magenta")
                 + " "
-                + colored(f"[INFO]", "white")
-                + f" {string}"
-            )
+                + colored("[INFO]", "white")
+            ) + f" {string}"
             print(s)
         else:
             s = f"[{self.z.current_thread.name}] " + f"[INFO] {string}"
@@ -244,14 +243,12 @@ class IKernel(object):
         Finds and returns syscall name by syscall number.
         """
         if n in self.rev_map:
-            sys_name = self.rev_map[n]
-            return sys_name
-        else:
-            self.logger.error(
-                f"[!] [0x{self.z.current_thread.getIP():x}] "
-                f"Could not find syscall name by number: [{n} 0x{n:x}]"
-            )
-            return "Unknown"
+            return self.rev_map[n]
+        self.logger.error(
+            f"[!] [0x{self.z.current_thread.getIP():x}] "
+            f"Could not find syscall name by number: [{n} 0x{n:x}]"
+        )
+        return "Unknown"
 
     def find_syscall(self, sys_name):
         """

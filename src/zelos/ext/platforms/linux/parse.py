@@ -151,12 +151,10 @@ class LiefELF(ParsedBinary):
         base = relocated_base + binary.imagebase
         self.base = base
 
-        # Only load segments that are the LOAD type.
-        segments_to_load = []
-        for s in binary.segments:
-            if s.type == lief.ELF.SEGMENT_TYPES.LOAD:
-                segments_to_load.append(s)
-        if len(segments_to_load) == 0:
+        segments_to_load = [
+            s for s in binary.segments if s.type == lief.ELF.SEGMENT_TYPES.LOAD
+        ]
+        if not segments_to_load:
             raise UnsupportedBinaryError("No loadable segment")
 
         for segment in segments_to_load:
@@ -267,7 +265,7 @@ def print_tls(binary):
     if len(callbacks) > 0:
         print("Callbacks:")
         for callback in callbacks:
-            print("  " + hex(callback))
+            print(f"  {hex(callback)}")
 
     print(format_hex.format("Address of index:", tls.addressof_index))
     print(format_hex.format("Size of zero fill:", tls.sizeof_zero_fill))

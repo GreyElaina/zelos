@@ -171,7 +171,7 @@ class FileSystem(PathTranslator):
         else:
             self._temp_dir_object = TemporaryDirectory()
             self.sandbox_path = self._temp_dir_object.name
-        self.sandboxed_files = dict()
+        self.sandboxed_files = {}
 
         self.fds = []
 
@@ -195,12 +195,10 @@ class FileSystem(PathTranslator):
         Creates file with the given name. Returns the handle used to
         access it
         """
-        handle_num = self.handles.new_file(emulated_path)
-        return handle_num
+        return self.handles.new_file(emulated_path)
 
     def get_file_by_name(self, filename):
-        handle_num = self.handles.get_by_name(filename)
-        return handle_num
+        return self.handles.get_by_name(filename)
 
     def get_filename(self, handle):
         handle_data = self.handles.get(handle)
@@ -228,7 +226,7 @@ class FileSystem(PathTranslator):
     def open_sandbox_file(
         self, orig_filename: str, create_if_not_exists: bool = False
     ):
-        if orig_filename == "":
+        if not orig_filename:
             return None
         # TODO: There should be a generalized way to map between the
         # windows vision of the files and the internal zelos vision.
@@ -288,9 +286,7 @@ class FileSystem(PathTranslator):
 
     def list_dir(self, orig_filename):
         path = self.find_library(orig_filename)
-        if path is None:
-            return None
-        return os.listdir(path)
+        return None if path is None else os.listdir(path)
 
     def open_library(self, orig_filename):
         path = self.find_library(orig_filename)

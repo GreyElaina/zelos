@@ -54,23 +54,18 @@ class Modules:
 
     def get_module_base(self, module_name):
         module_name = self._normalize_name(module_name)
-        for module in self.modules:
-            if module_name == module[0]:
-                return module[1]
-        return 0
+        return next(
+            (module[1] for module in self.modules if module_name == module[0]), 0
+        )
 
     def get_module_name_at_address(self, imagebase):
-        for module in self.modules:
-            if module[1] == imagebase:
-                return module[0]
-        return ""
+        return next(
+            (module[0] for module in self.modules if module[1] == imagebase), ""
+        )
 
     def is_loaded(self, modulename):
         modulename = self._normalize_name(modulename)
-        for module in self.modules:
-            if modulename == module[0]:
-                return True
-        return False
+        return any(modulename == module[0] for module in self.modules)
 
     # Returns the normalized module name with path stripped/lowercased.
     def _normalize_name(self, module_name):

@@ -89,14 +89,13 @@ class TraceTest(unittest.TestCase):
 
         z.start()
 
-        f = open(temp_file, "r")
-        lines = f.readlines()
-        print(lines)
-        # TODO: Figure out why runners execute a different number of
-        # lines. They seem to consistently get 9579.
-        # self.assertEqual(len([l for l in lines if "[INS]" in l]), 9580)
-        self.assertEqual(len([l for l in lines if "[SYSCALL]" in l]), 12)
-        f.close()
+        with open(temp_file, "r") as f:
+            lines = f.readlines()
+            print(lines)
+            # TODO: Figure out why runners execute a different number of
+            # lines. They seem to consistently get 9579.
+            # self.assertEqual(len([l for l in lines if "[INS]" in l]), 9580)
+            self.assertEqual(len([l for l in lines if "[SYSCALL]" in l]), 12)
         z.plugins.trace.trace_file.close()
         os.close(fd)
         os.remove(temp_file)

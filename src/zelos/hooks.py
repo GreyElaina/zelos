@@ -507,10 +507,7 @@ class HookManager:
 
     def _is_zebracorn_hook(self, hook_type):
         if isinstance(hook_type, HookType.MEMORY):
-            if self.is_internal_mem_hook(hook_type):
-                return False
-            return True
-
+            return not self.is_internal_mem_hook(hook_type)
         if isinstance(hook_type, HookType.EXEC) or hook_type in [
             HookType._OTHER.INTERRUPT
         ]:
@@ -523,7 +520,6 @@ class HookManager:
         raise Exception(
             f"Unsure whether {hook_type} is a type of zebracorn hook."
         )
-        return False
 
     def _add_zelos_hook(self, hook_type, callback, name=None) -> HookInfo:
         hook_info = HookInfo(hook_type, callback, self._hook_index, name=name)
@@ -725,7 +721,7 @@ class Hooks:
 
     def del_hook(self, name):
         if name not in self._hook_dict:
-            self.logger.notice("No hook with name %s" % name)
+            self.logger.notice(f"No hook with name {name}")
             return
         handle = self._hook_dict.pop(name)
         self._delete_zebracorn_hook(handle)
@@ -761,11 +757,9 @@ class InterruptHooks:
         self.enable()
 
     def __str__(self):
-        s = "Registered Interrupt Handlers:\n"
-        s += "\n".join(
+        return "Registered Interrupt Handlers:\n" + "\n".join(
             [f"  0x{k:x}: {v}" for k, v in self.interrupt_handlers.items()]
         )
-        return s
 
     def enable(self) -> None:
         """Enables hooks for cpu interrupts across all processes."""
@@ -829,7 +823,7 @@ class ExceptionHooks:
     def handle_exception(self, e):
         if self.handler is None:
             self.logger.notice("No exception handler registered")
-            self.z.scheduler.stop(f"Unhandled exception")
+            self.z.scheduler.stop("Unhandled exception")
             return
         self.logger.debug(
             f"Invoking Exception Handler: {e} "

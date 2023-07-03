@@ -80,7 +80,7 @@ class HandleTest(unittest.TestCase):
         self.assertIs(handles.get_by_name("file1"), file_num1)
 
         file_handles = handles.get_by_type(FileHandle)
-        self.assertSetEqual(set(file_handles), set([file1, file2]))
+        self.assertSetEqual(set(file_handles), {file1, file2})
 
         self.assertIsNone(handles.get(file_num1, pid=0x1000))
 

@@ -225,7 +225,7 @@ class UnicornTest(unittest.TestCase):
             # emulate machine code in infinite time
             mu.emu_start(ADDRESS, ADDRESS + len(X86_CODE64_SYSCALL))
         except UcError as e:
-            print("ERROR: %s" % e)
+            print(f"ERROR: {e}")
 
         # now print out some registers
         print(">>> Emulation done. Below is the CPU context")

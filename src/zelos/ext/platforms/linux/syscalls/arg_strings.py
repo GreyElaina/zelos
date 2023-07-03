@@ -130,7 +130,5 @@ def _parse_fdset(z, addr):
     fds = []
     for i in range(0, 1024 // 8, 32 // 8):
         val = z.memory.read_uint32(addr + i)
-        for bit in range(32):
-            if val & 2 ** bit != 0:
-                fds.append((i // 4) * 32 + bit)
+        fds.extend((i // 4) * 32 + bit for bit in range(32) if val & 2 ** bit != 0)
     return fds

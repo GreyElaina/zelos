@@ -40,8 +40,6 @@ class Section(object):
 
     def string(self):
         return "Section(Name={0.Name}, Perms=0x{0.Permissions:02x},"
-        "Address=0x{0.Address:08x}, VirtualSize=0x{0.VirtualSize:08x},"
-        "Alignment=0x{0.Alignment:04x})".format(self)
 
     def __str__(self):
         return self.string()
@@ -149,8 +147,6 @@ class ParsedBinary(object):
 
     def string(self):
         return "Binary(Name={0.ShortName}, Address=0x{0.ImageBase:08x},"
-        "VirtualSize=0x{0.VirtualSize:08x}, Arch={0.Architecture},"
-        "Mode={0.Bits})".format(self)
 
     def __str__(self):
         return self.string()

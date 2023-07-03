@@ -75,8 +75,7 @@ def _create_sockaddr_in(domain, host, port):
     s_in.sin_family = domain
     s_in.sin_addr = _host_to_bytes(host, domain)
     s_in.sin_port = _port_to_bytes(port)
-    struct_bytes = struct2str(s_in)
-    return struct_bytes
+    return struct2str(s_in)
 
 
 def _socket_linux_to_python(k, domain, type, protocol):
@@ -468,7 +467,7 @@ def recvfrom(k, p, args_addr):
         k.set_errno(e.errno)
         return -e.errno
     except Exception as e:
-        print("[recvfrom] error: " + str(e))
+        print(f"[recvfrom] error: {str(e)}")
         return -1
 
 
@@ -477,8 +476,7 @@ def _recv(k, p, sockfd, buf, _len, flags=0):
     if not isinstance(socket_handle, SocketHandle):
         return -1
     sock = socket_handle.socket
-    has_data = sock.peek()
-    if has_data:
+    if has_data := sock.peek():
         data = sock.recv(_len, flags)
         k.print(f"received: '{data}'")
         p.memory.write(buf, data)
@@ -561,7 +559,7 @@ def sendmmsg(k, p, args_addr):
         ],
     )
     mmsg_addr = args.msgvec
-    for i in range(args.vlen):
+    for _ in range(args.vlen):
         msghdr = p.memory.readstruct(mmsg_addr, structs.MSGHDR())
         bytes_sent = _sendmsg(k, p, args.sockfd, msghdr, args.flags)
         msg_len_addr = mmsg_addr + ctypes.sizeof(msghdr)
@@ -581,9 +579,7 @@ def _sendmsg(k, p, sockfd, msghdr, flags):
     for iovec in iovec_array:
         gathered_results += p.memory.read(iovec.iov_base, iovec.iov_len)
 
-    sent_len = _send(k, p, sockfd, gathered_results, flags)
-
-    return sent_len
+    return _send(k, p, sockfd, gathered_results, flags)
 
 
 def recvmsg(k, p, args_addr):

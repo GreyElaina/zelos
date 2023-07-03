@@ -45,7 +45,7 @@ class IPlugin(IManager):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         name = getattr(cls, "NAME", cls.__name__.lower())
-        file_and_name = inspect.getfile(cls) + "::" + name
+        file_and_name = f"{inspect.getfile(cls)}::{name}"
         Plugins.loaded_plugins[file_and_name] = cls
 
 
@@ -67,7 +67,7 @@ def load(paths):
     paths += zelos.ext.platforms.__path__._path
 
     paths = {p for p in paths if isabs(p) and p not in plugins_loaded}
-    if len(paths) == 0:
+    if not paths:
         return
 
     modules_to_load = []
@@ -176,7 +176,7 @@ class OSPlugins:
     def load(self, file, process, entrypoint_override=None):
         if self.chosen_os is None:
             raise UnsupportedBinaryError(
-                f"No supported parser was identified during parsing"
+                "No supported parser was identified during parsing"
             )
         self.chosen_os.load(
             file, process, entrypoint_override=entrypoint_override

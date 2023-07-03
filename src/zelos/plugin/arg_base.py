@@ -42,14 +42,10 @@ class ArgFactory:
         values: List[int],
         arg_string_overrides: Dict[str, Callable[[Args], str]] = {},
     ) -> Args:
-        arg_list = []
-
-        # We collect the args first since some overrides require all of
-        # the arg values. For example, when passed a buffer and a count
-        # of bytes to write, we may want to restrict the size of the
-        # buffer to print by the count.
-        for (type_str, name), val in zip(arg_spec, values):
-            arg_list.append(Arg(type_str, name, val, ""))
+        arg_list = [
+            Arg(type_str, name, val, "")
+            for (type_str, name), val in zip(arg_spec, values)
+        ]
         args = Args(arg_list)
 
         for a in args._args:

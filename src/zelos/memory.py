@@ -63,7 +63,7 @@ class Memory:
         from zebracorn import UC_HOOK_MEM_READ_PROT
 
         self.emu.hook_add(UC_HOOK_MEM_READ_PROT, self._hook_read_prot)
-        self.mem_hooks = dict()
+        self.mem_hooks = {}
 
     def __str__(self):
         s = "Memory Manager:\n"
@@ -99,7 +99,7 @@ class Memory:
         """
         Clears all of memory
         """
-        self.logger.debug(f"Clearing Memory...")
+        self.logger.debug("Clearing Memory...")
         for region in self.get_regions():
             self.logger.debug(f"  Clearing {region.start:x}-{region.end:x}")
             self.unmap(region.start, region.size)
@@ -330,7 +330,7 @@ class Memory:
             List of structures read from memory.
         """
         results = []
-        for i in range(count):
+        for _ in range(count):
             struct = self.readstruct(addr, obj)
             results.append(struct)
             addr += ctypes.sizeof(struct)
@@ -521,7 +521,7 @@ class Memory:
 
         """
         if self.disableNX:
-            prot = prot | ProtType.EXEC
+            prot |= ProtType.EXEC
         self.logger.debug(
             f"Mapping region "
             f"0x{address:x} of size 0x{size:x} ({name}, {kind})"
@@ -606,7 +606,7 @@ class Memory:
         """
         # return
         if self.disableNX:
-            prot = prot | ProtType.EXEC
+            prot |= ProtType.EXEC
         aligned_address = (
             address & 0xFFFFFFFFFFFFF000
         )  # Address needs to align with
@@ -661,9 +661,7 @@ class Memory:
             Also, clarity regions split by unmap is needed.
         """
         region = self.get_region(address)
-        if region is None:
-            return None
-        return region.address
+        return None if region is None else region.address
 
     def get_module_base(self, name: str) -> Optional[int]:
         regions = [
@@ -671,9 +669,7 @@ class Memory:
             for mr in self.get_regions()
             if os.path.basename(mr.module_name) == os.path.basename(name)
         ]
-        if len(regions) == 0:
-            return None
-        return min([mr.address for mr in regions])
+        return None if not regions else min(mr.address for mr in regions)
 
     def get_perms(self, address: int) -> int:
         """
@@ -687,9 +683,7 @@ class Memory:
             Permissions of the containing section.
         """
         region = self.get_region(address)
-        if region is None:
-            return None
-        return region.prot
+        return None if region is None else region.prot
 
     def get_size(self, address: int) -> int:
         """
@@ -702,9 +696,7 @@ class Memory:
             Size of the containing section.
         """
         region = self.get_region(address)
-        if region is None:
-            return None
-        return region.size
+        return None if region is None else region.size
 
     # TODO: move to memory hook API
     def hook_first_read(self, region_addr, hook):
@@ -745,9 +737,7 @@ class Memory:
         address.
         """
         mr = self.get_region(address)
-        if mr is None:
-            return False
-        return mr.prot & ProtType.WRITE != 0
+        return False if mr is None else mr.prot & ProtType.WRITE != 0
 
     def get_region(self, address: int) -> Optional[MemoryRegion]:
         """Gets the region that this address belongs to."""
@@ -823,10 +813,10 @@ class Memory:
         given size would overlap with an existing mapped region.
         """
         requested_end = requested_addr + size
-        for region in self.get_regions():
-            if requested_addr <= region.end and requested_end >= region.start:
-                return True
-        return False
+        return any(
+            requested_addr <= region.end and requested_end >= region.start
+            for region in self.get_regions()
+        )
 
     def find_free_space(
         self,
@@ -867,9 +857,7 @@ class Memory:
         )
         gap_end = max_addr
         gap_size = gap_end - gap_begin
-        if gap_size >= size:
-            return gap_begin
-        return None
+        return gap_begin if gap_size >= size else None
 
     def search(self, needle: bytes) -> List[int]:
         """
@@ -940,8 +928,8 @@ class _HeapObjInfo:
         def func_name(call):
             max_name_size = 25
             if len(call.name) <= max_name_size:
-                return "(" + call.name + ")"
-            return "(" + call.name[:max_name_size] + "...)"
+                return f"({call.name})"
+            return f"({call.name[:max_name_size]}...)"
 
         s += " <- ".join(
             [func_name(call) for call in reversed(self.call_stack[-5:])]
@@ -951,18 +939,13 @@ class _HeapObjInfo:
         return s
 
     def created_in_func(self):
-        if len(self.call_stack) == 0:
-            return None
-        return self.call_stack[-1]
+        return None if len(self.call_stack) == 0 else self.call_stack[-1]
 
     def add_access(self, eip, access, address, size):
         self.accesses[address - self.address][eip] = (access, size)
 
     def is_accessed_at(self, eip):
-        for accesses in self.accesses.values():
-            if eip in accesses:
-                return True
-        return False
+        return any(eip in accesses for accesses in self.accesses.values())
 
     def has_overflow(self):
         for offset, accesses in self.accesses.items():

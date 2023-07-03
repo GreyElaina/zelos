@@ -42,7 +42,6 @@ class Handle(object):
 
     def __str__(self):
         return f"{self.category()}\tRefs {self.Refs}\tAccess"
-        f" {self.Access:08x}\t\t{self.Name}"
 
     def close(self) -> None:
         """
@@ -161,9 +160,7 @@ class FileHandle(Handle):
         self._file = f
 
     def read(self, size: int) -> bytes:
-        if self._file is None:
-            return bytes()
-        return self._file.read(size)
+        return bytes() if self._file is None else self._file.read(size)
 
     def cleanup(self) -> None:
         if self._file is not None and self._close_on_cleanup:
@@ -244,7 +241,6 @@ class ThreadHandle(Handle):
 
     def __str__(self) -> str:
         return f"ThreadHandle tid:{self.tid:x}, Refs {self.Refs}\tAccess"
-        f" {self.Access:08x}\t\t{self.Name}"
 
 
 class PipeInHandle(Handle):
@@ -253,8 +249,7 @@ class PipeInHandle(Handle):
         self.pipe = pipe
 
     def write(self, data: bytes) -> int:
-        bytes_written = self.pipe.write(data)
-        return bytes_written
+        return self.pipe.write(data)
 
     def cleanup(self) -> None:
         self.pipe.write_end_closed = True
@@ -306,7 +301,7 @@ class Handles:
         self.file_system = file_system
         self.logger = logging.getLogger(__name__)
         self.handle_dict = defaultdict(dict)
-        self.closed_handles = dict()
+        self.closed_handles = {}
         # TODO Add function for managing handle indices, so anybody who
         # modifies handle-creation code in the future does not
         # accidentally break internal index rules (being a multiple of
@@ -475,10 +470,10 @@ class Handles:
         pipe = Pipe()
 
         out_handle = PipeOutHandle(
-            name + "_out", pipe, parent_thread=parent_thread, access=access
+            f"{name}_out", pipe, parent_thread=parent_thread, access=access
         )
         in_handle = PipeInHandle(
-            name + "_in", pipe, parent_thread=parent_thread, access=access
+            f"{name}_in", pipe, parent_thread=parent_thread, access=access
         )
         out_handle_num = self.add_handle(out_handle)
         in_handle_num = self.add_handle(in_handle)
@@ -500,10 +495,14 @@ class Handles:
             The handle number corresponding to the specified name if one
             exists. If no such handle exists, returns None.
         """
-        for handle_num, h in self._all_handles(pid):
-            if h.Name == name:
-                return handle_num
-        return None
+        return next(
+            (
+                handle_num
+                for handle_num, h in self._all_handles(pid)
+                if h.Name == name
+            ),
+            None,
+        )
 
     def get_by_type(
         self, class_type: type, pid: Optional[int] = None
@@ -600,15 +599,11 @@ class Handles:
     def _all_handles(self, pid=None):
         handles = []
         if pid is not None:
-            return [
-                (num, h) for num, h in self.handle_dict.get(pid, {}).items()
-            ]
+            return list(self.handle_dict.get(pid, {}).items())
 
         # Return all handles across processes
         for process_handle_dict in self.handle_dict.values():
-            handles.extend(
-                [(num, h) for num, h in process_handle_dict.items()]
-            )
+            handles.extend(list(process_handle_dict.items()))
         return handles
 
     def _get_handle_num(self, requested_num=None, pid=None):
@@ -627,12 +622,11 @@ class Handles:
         return handle_num
 
     def _save_state(self):
-        context = {
+        return {
             "handles": self._all_handles(None),
             "closed_handles": self.closed_handles.copy(),
             "handle_index": self.handle_index,
         }
-        return context
 
     def _load_state(self, data):
         self._clear()

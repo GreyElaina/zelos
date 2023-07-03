@@ -195,9 +195,7 @@ class Process:
         thread_priority_list = [
             t.priority for t in self.threads.get_active_threads()
         ]
-        if len(thread_priority_list) == 0:
-            return -100
-        return max(thread_priority_list)
+        return -100 if not thread_priority_list else max(thread_priority_list)
 
     def blocks_executed(self) -> int:
         """
@@ -264,7 +262,7 @@ class Processes:
         self.state = state
 
     def _create_first_process(self, main_module_name: str) -> None:
-        self.new_process(main_module_name + "_main", None)
+        self.new_process(f"{main_module_name}_main", None)
         self.current_process = self.process_list[0]
 
     def __str__(self) -> str:

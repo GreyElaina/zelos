@@ -193,7 +193,7 @@ class ZdbServer:
         Returns:
             A list of the current memory regions.
         """
-        logger.debug(f"[debug] get_mappings()")
+        logger.debug("[debug] get_mappings()")
         vmmap = []
         regions = self.z.memory.get_regions()
         for region in regions:
@@ -228,7 +228,7 @@ class ZdbServer:
                 }
 
         """
-        logger.debug(f"[debug] run()")
+        logger.debug("[debug] run()")
         break_state = self.z.start()
         # Format break_state for RPC by converting `None` and Numbers to
         # RPC-serializable values.
@@ -252,7 +252,7 @@ class ZdbServer:
         Returns:
             True if no exception occurred.
         """
-        logger.debug(f"[debug] stop()")
+        logger.debug("[debug] stop()")
         self.z.stop("debug stop")
         return True
 
